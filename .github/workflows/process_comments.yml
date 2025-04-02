@@ -1,0 +1,33 @@
+name: Process Issue Comments
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  process-approval:
+    runs-on: ubuntu-latest
+    if: contains(github.event.comment.body, 'GOEDGEKEURD') || contains(github.event.comment.body, 'REVISIE NODIG')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+      
+      - name: Process approval comment
+        run: |
+          if [[ "${{ github.event.comment.body }}" == *"GOEDGEKEURD"* ]]; then
+            python .github/scripts/update_issue_status.py ${{ github.event.issue.number }} "GOEDGEKEURD"
+          elif [[ "${{ github.event.comment.body }}" == *"REVISIE NODIG"* ]]; then
+            python .github/scripts/update_issue_status.py ${{ github.event.issue.number }} "REVISIE NODIG"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
